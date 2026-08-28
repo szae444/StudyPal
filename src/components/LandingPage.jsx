@@ -25,7 +25,7 @@ export default function LandingPage({ onEnterApp, setCurrentPage, user }) {
                         in seconds. Built for students who mean business.
                     </p>
                     <div className="landing-hero-ctas">
-                        <button className="landing-cta-primary" onClick={onEnterApp}>
+                        <button className="landing-cta-primary" onClick={() => onEnterApp(user ? 'login' : 'signup')}>
                             {user ? 'Go to Dashboard' : 'Sign up for free'} <ArrowRight size={16} />
                         </button>
                         <a href="#features" className="landing-cta-secondary">
@@ -209,7 +209,7 @@ export default function LandingPage({ onEnterApp, setCurrentPage, user }) {
                 <div className="final-cta-inner">
                     <p className="final-cta-eyebrow">Your exam is next.</p>
                     <h2 className="final-cta-title">Start studying with AI today.</h2>
-                    <button className="landing-cta-primary large" onClick={onEnterApp}>
+                    <button className="landing-cta-primary large" onClick={() => onEnterApp(user ? 'login' : 'signup')}>
                         {user ? 'Open your Dashboard' : 'Create your free account'} <ArrowRight size={18} />
                     </button>
                     <p className="final-cta-note">Create an account to securely save and access your study materials anytime.</p>

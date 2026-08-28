@@ -29,10 +29,10 @@ export default function LandingNav({ onEnterApp, activePage = 'home', setCurrent
                         </button>
                     ) : (
                         <>
-                            <button className="about-nav-cta desktop-only" onClick={onEnterApp} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', marginRight: '0.5rem' }}>
+                            <button className="about-nav-cta desktop-only" onClick={() => onEnterApp('login')} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', marginRight: '0.5rem' }}>
                                 Log In
                             </button>
-                            <button className="about-nav-cta desktop-only" onClick={onEnterApp}>
+                            <button className="about-nav-cta desktop-only" onClick={() => onEnterApp('signup')}>
                                 Sign Up <ArrowRight size={14} />
                             </button>
                         </>
@@ -56,10 +56,10 @@ export default function LandingNav({ onEnterApp, activePage = 'home', setCurrent
                         </button>
                     ) : (
                         <>
-                            <button className="mobile-nav-cta" onClick={onEnterApp} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', marginBottom: '0.5rem', width: '100%', marginTop: '0.5rem' }}>
+                            <button className="mobile-nav-cta" onClick={() => onEnterApp('login')} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', marginBottom: '0.5rem', width: '100%', marginTop: '0.5rem' }}>
                                 Log In
                             </button>
-                            <button className="mobile-nav-cta" onClick={onEnterApp} style={{ width: '100%' }}>
+                            <button className="mobile-nav-cta" onClick={() => onEnterApp('signup')} style={{ width: '100%' }}>
                                 Sign Up <ArrowRight size={14} />
                             </button>
                         </>

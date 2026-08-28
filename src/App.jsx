@@ -34,6 +34,14 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'about' | 'changelog'
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup' — which Auth form to open
+
+  // Opens the Auth screen. `mode` lets each CTA say whether it means "Log In" or "Sign Up"
+  // so a new user clicking Sign Up doesn't land on the Sign In form by default.
+  const enterApp = (mode = 'login') => {
+    setAuthMode(mode);
+    setShowLanding(false);
+  };
 
   // Handle SPA routing and browser history navigation
   useEffect(() => {
@@ -194,24 +202,25 @@ function App() {
   // ── NOT AUTHENTICATED: landing pages (showLanding=true) or auth form (showLanding=false) ──
   if (showLanding) {
     if (currentPage === 'about') {
-      return <AboutPage onEnterApp={() => setShowLanding(false)} setCurrentPage={setCurrentPage} user={null} />;
+      return <AboutPage onEnterApp={enterApp} setCurrentPage={setCurrentPage} user={null} />;
     }
     if (currentPage === 'changelog') {
-      return <ChangelogPage onEnterApp={() => setShowLanding(false)} setCurrentPage={setCurrentPage} user={null} />;
+      return <ChangelogPage onEnterApp={enterApp} setCurrentPage={setCurrentPage} user={null} />;
     }
-    return <LandingPage onEnterApp={() => setShowLanding(false)} setCurrentPage={setCurrentPage} user={null} />;
+    return <LandingPage onEnterApp={enterApp} setCurrentPage={setCurrentPage} user={null} />;
   }
 
   // ── AUTH FORM ─────────────────────────────────────────────────────────────
   return (
     <>
       <Toaster position="top-right" />
-      <Auth 
-        onLogin={(u) => { 
+      <Auth
+        initialMode={authMode}
+        onLogin={(u) => {
           toast.success(`Welcome ${u.displayName || 'User'}!`);
           // No need to setShowLanding here — onAuthStateChanged will fire,
           // set user, and the "if (user)" block above will render the app.
-        }} 
+        }}
         onBack={() => setShowLanding(true)}
       />
     </>
