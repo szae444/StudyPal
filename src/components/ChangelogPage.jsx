@@ -105,7 +105,7 @@ export default function ChangelogPage({ onEnterApp, setCurrentPage, user }) {
             {/* ── FOOTER ── */}
             <footer className="landing-footer">
                 <div className="footer-inner">
-                    <p className="footer-copy">© 2026 StudyPal. Built for My Love.</p>
+                    <p className="footer-copy">© 2026 StudyPal. Built for Students Everywhere.</p>
                     <div className="footer-links">
                         <button className="footer-link" onClick={() => window.location.href = '/' }>Home</button>
                         <button className="footer-link" onClick={() => window.open('https://github.com', '_blank')}>Github</button>

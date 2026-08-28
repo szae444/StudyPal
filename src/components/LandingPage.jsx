@@ -75,10 +75,10 @@ export default function LandingPage({ onEnterApp, setCurrentPage, user }) {
                         <span className="landing-section-label">The Story</span>
                         <h2 className="why-title">Built for the late-night grinders.</h2>
                         <p className="why-text">
-                            I built StudyPal for my girlfriend, my beautiful future nurse. She is my biggest inspiration and the whole reason this project exists. I hated seeing her stay up all night exhausted, manually making reviewers, quizzes, and flashcards.
+                            I built StudyPal because I know what it feels like to drown in endless lecture slides, dense textbooks, and impending exam deadlines. Watching dedicated students spend countless late nights manually compiling reviewers, quizzes, and flashcards instead of actually mastering the material felt like an exhausting battle.
                         </p>
                         <p className="why-text">
-                            I just wanted to make her life a little easier so she can focus on achieving her dreams. I would gladly write a million lines of code if it meant giving her a few extra hours of rest. To my favorite girl: I'm so incredibly proud of you, and I'll always be right here to support you. This is for you, my love, so you can finally rest your eyes knowing I've always got your back.
+                            StudyPal was created to give students their time, focus, and energy back. By leveraging modern AI to automate the tedious parts of studying—generating structured reviewers, active-recall quizzes, and smart flashcard decks in seconds—learners can focus on what truly matters: understanding concepts deeply, reducing burnout, and acing their goals.
                         </p>
                         <div className="why-author">
                             <span className="author-name">— Sebastian Lazarte</span>
@@ -225,7 +225,7 @@ export default function LandingPage({ onEnterApp, setCurrentPage, user }) {
                         </div>
                         <span className="landing-logo-text">StudyPal</span>
                     </div>
-                    <p className="footer-copy">© 2026 StudyPal. Built for My Love.</p>
+                    <p className="footer-copy">© 2026 StudyPal. Built for Students Everywhere.</p>
                     <div className="footer-links">
                         <a href="/?page=changelog" className="footer-link">Changelog</a>
                         <a href="/?page=about" className="footer-link">About</a>
