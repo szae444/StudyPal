@@ -1,19 +1,19 @@
-import React from 'react';
-import { BookOpen, ArrowRight, Github, Mail, Twitter } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import LandingNav from './LandingNav';
+import SiteFooter from './SiteFooter';
 
-export default function AboutPage({ onEnterApp, setCurrentPage, user }) {
+export default function AboutPage({ onEnterApp, setCurrentPage, user, theme, toggleTheme }) {
     return (
         <div className="landing-page about-page-root">
             {/* ── FLOATING NAV ── */}
-            <LandingNav onEnterApp={onEnterApp} activePage="about" setCurrentPage={setCurrentPage} user={user} />
+            <LandingNav onEnterApp={onEnterApp} activePage="about" setCurrentPage={setCurrentPage} user={user} theme={theme} toggleTheme={toggleTheme} />
 
             {/* ── HERO ── */}
             <div className="about-hero">
                 <div className="about-container">
                     <div className="about-section-split">
                         <div className="about-split-side">
-                            <span className="landing-section-label">— ABOUT</span>
+                            <span className="landing-section-label">About</span>
                         </div>
                         <div className="about-split-main">
                             <h1 className="about-serif-title">
@@ -35,7 +35,7 @@ export default function AboutPage({ onEnterApp, setCurrentPage, user }) {
                 <div className="about-container">
                     <div className="about-section-split">
                         <div className="about-split-side">
-                            <span className="landing-section-label">— THE MISSION</span>
+                            <span className="landing-section-label">The mission</span>
                         </div>
                         <div className="about-split-main">
                             <h2 className="about-split-title">Study + Companion</h2>
@@ -46,10 +46,10 @@ export default function AboutPage({ onEnterApp, setCurrentPage, user }) {
                                 not replace it.
                             </p>
                             <p className="about-text">
-                                The interface is designed to stay out of your way. Each feature 
-                                is contained within its own bento card, ensuring that your 
-                                workspace remains organized and intuitive. No clutter, 
-                                no distractions—just you and your material.
+                                The interface is designed to stay out of your way. Your desk is
+                                laid out like a bento: the timer, today's plan, the cards due
+                                for review and your study history each sit in their own box.
+                                No clutter, no distractions—just you and your material.
                             </p>
                         </div>
                     </div>
@@ -61,7 +61,7 @@ export default function AboutPage({ onEnterApp, setCurrentPage, user }) {
                 <div className="about-container">
                     <div className="about-section-split">
                         <div className="about-split-side">
-                            <span className="landing-section-label">— PHILOSOPHY</span>
+                            <span className="landing-section-label">Philosophy</span>
                         </div>
                         <div className="about-split-main">
                             <div className="about-grid-3col">
@@ -85,8 +85,9 @@ export default function AboutPage({ onEnterApp, setCurrentPage, user }) {
                                     <span className="about-col-tag">Simple</span>
                                     <h3 className="about-col-title">Intentional Design</h3>
                                     <p className="about-col-text">
-                                        Every pixel is accounted for. We use a high-contrast, 
-                                        monochrome palette to minimize cognitive load.
+                                        Everything looks like something from a real study desk:
+                                        cream paper, black ink, one highlighter and a red pen.
+                                        Calm enough to work in for hours.
                                     </p>
                                 </div>
                             </div>
@@ -100,7 +101,7 @@ export default function AboutPage({ onEnterApp, setCurrentPage, user }) {
                 <div className="about-container">
                     <div className="about-section-split">
                         <div className="about-split-side">
-                            <span className="landing-section-label">— WHO IT'S FOR</span>
+                            <span className="landing-section-label">Who it's for</span>
                         </div>
                         <div className="about-split-main">
                             <div className="about-grid-2x2">
@@ -141,28 +142,14 @@ export default function AboutPage({ onEnterApp, setCurrentPage, user }) {
             {/* ── FINAL CTA ── */}
             <section className="landing-final-cta">
                 <div className="final-cta-inner">
-                    <h2 className="about-serif-title" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)' }}>
-                        Ready to start?
-                    </h2>
-                    <div className="landing-hero-ctas">
-                        <button className="landing-cta-primary large" onClick={onEnterApp}>
-                            {user ? 'Go to Dashboard' : 'Open StudyPal'} <ArrowRight size={18} />
-                        </button>
-                    </div>
+                    <h2 className="final-cta-title">Ready to <em>sit down?</em></h2>
+                    <button className="landing-cta-primary large" onClick={() => onEnterApp(user ? 'login' : 'signup')}>
+                        {user ? 'Go to my desk' : 'Open StudyPal'} <ArrowRight size={18} />
+                    </button>
                 </div>
             </section>
 
-            {/* ── FOOTER ── */}
-            <footer className="landing-footer">
-                <div className="footer-inner">
-                    <p className="footer-copy">© 2026 StudyPal. Built for Students Everywhere.</p>
-                    <div className="footer-links">
-                        <button className="footer-link" onClick={() => window.location.href = '/' }>Home</button>
-                        <button className="footer-link" onClick={() => window.open('https://github.com', '_blank')}>Github</button>
-                        <button className="footer-link" onClick={() => window.open('https://twitter.com', '_blank')}>Twitter</button>
-                    </div>
-                </div>
-            </footer>
+            <SiteFooter onEnterApp={onEnterApp} user={user} />
         </div>
     );
 }

@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, logOut, getGoogleRedirectResult } from './services/firebaseService';
+import { auth, logOut, getGoogleRedirectResult, getUserStudyMaterials } from './services/firebaseService';
+import { summarizeDecks } from './utils/srs';
+import { DeskProvider } from './desk/DeskContext';
 
 import Sidebar from './components/Sidebar';
 import Tabs from './components/Tabs';
@@ -19,22 +21,48 @@ import ChangelogPage from './components/ChangelogPage';
 import AdminPage from './components/AdminPage';
 import AccountPage from './components/AccountPage';
 import PaymentPage from './components/PaymentPage';
+import Desk from './components/desk/Desk';
+import MiniTimer from './components/desk/MiniTimer';
+import ReviewSession from './components/ReviewSession';
+import BrandMark from './components/BrandMark';
 
-import { LogOut, Home, Bookmark, Menu, BookOpen } from 'lucide-react';
+import { Menu } from 'lucide-react';
+
+const initialTheme = () => {
+  try {
+    const saved = localStorage.getItem('studypal.theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch { /* storage unavailable */ }
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const toasterOptions = {
+  style: {
+    background: 'var(--bg-glass)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
+    boxShadow: 'var(--shadow-md)',
+    fontSize: '14px',
+  },
+};
 
 function App() {
-  const theme = 'light';
+  const [theme, setTheme] = useState(initialTheme);
   const [activeTab, setActiveTab] = useState('reviewer');
   const [fileContent, setFileContent] = useState('');
 
   // Auth and Routing State
   const [user, setUser] = useState(null);
   const [loadingObj, setLoadingObj] = useState(true);
-  const [currentView, setCurrentView] = useState('generator'); // 'generator' | 'library'
+  const [currentView, setCurrentView] = useState('desk'); // 'desk' | 'generator' | 'review' | 'library' | ...
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'about' | 'changelog'
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup' — which Auth form to open
+
+  // Saved materials, used for the review queue and the desk's due count
+  const [materials, setMaterials] = useState([]);
+  const [materialsLoading, setMaterialsLoading] = useState(true);
 
   // Opens the Auth screen. `mode` lets each CTA say whether it means "Log In" or "Sign Up"
   // so a new user clicking Sign Up doesn't land on the Sign In form by default.
@@ -57,10 +85,12 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Force Light Theme
+  // Day desk / night desk
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'light');
-  }, []);
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('studypal.theme', theme); } catch { /* storage unavailable */ }
+  }, [theme]);
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   // Listen for Auth State Changes + handle Google redirect result (mobile)
   useEffect(() => {
@@ -97,12 +127,43 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  const refreshMaterials = useCallback(async () => {
+    if (!user) return;
+    try {
+      setMaterials(await getUserStudyMaterials(user.uid));
+    } catch (e) {
+      console.error('Failed to load materials', e);
+    } finally {
+      setMaterialsLoading(false);
+    }
+  }, [user]);
+
+  // Re-read saved decks whenever the desk comes back into view, so a deck saved
+  // from Generate or edited in the Library shows up in the due count.
+  useEffect(() => {
+    if (currentView === 'desk') refreshMaterials();
+  }, [currentView, refreshMaterials]);
+
+  const decks = useMemo(() => summarizeDecks(materials), [materials]);
+  const dueCount = decks.reduce((s, d) => s + d.due, 0);
+
+  const handleMaterialUpdated = useCallback((updated) => {
+    setMaterials((prev) => prev.map((m) => (m.id === updated.id ? { ...m, data: updated.data } : m)));
+  }, []);
+
   const handleLogout = async () => {
     await logOut();
     toast.success("Successfully logged out");
-    setCurrentView('generator');
+    setCurrentView('desk');
     setFileContent('');
+    setMaterials([]);
     setShowLanding(true); // Explicitly go back to landing on logout
+  };
+
+  const navigate = (view) => {
+    setCurrentView(view);
+    setIsSidebarOpen(false);
+    window.scrollTo({ top: 0 });
   };
 
   // ── LOADING ──────────────────────────────────────────────────────────────
@@ -119,101 +180,104 @@ function App() {
   // should never see the landing page or auth screen, regardless of any other state.
   if (user) {
     return (
-      <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)', overflowX: 'hidden' }}>
-        
-        {/* Mobile Overlay */}
-        <div 
-          className={`mobile-overlay ${isSidebarOpen ? 'open' : ''}`} 
-          onClick={() => setIsSidebarOpen(false)}
-        />
+      <DeskProvider key={user.uid} user={user}>
+        <div className="app-shell">
 
-        {/* Sidebar */}
-        <div className={`sidebar-container no-print ${isSidebarOpen ? 'open' : ''}`}>
-          <Sidebar
-            currentView={currentView}
-            setCurrentView={(view) => { setCurrentView(view); setIsSidebarOpen(false); }}
-            handleLogout={handleLogout}
-            user={user}
+          {/* Mobile Overlay */}
+          <div
+            className={`mobile-overlay ${isSidebarOpen ? 'open' : ''}`}
+            onClick={() => setIsSidebarOpen(false)}
           />
-        </div>
 
-        <div className="main-container-wrapper" style={{ 
-          flex: 1, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          width: '100%', 
-          minWidth: 0,
-          marginLeft: '260px'
-        }}>
-          
-          {/* Mobile Header */}
-          <div className="mobile-header no-print">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ background: 'var(--text-primary)', padding: '0.4rem', borderRadius: '8px', color: 'var(--bg-primary)', display: 'flex', alignItems: 'center' }}>
-                 <BookOpen size={18} strokeWidth={2.5} />
-              </div>
-              <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>StudyPal</h1>
-            </div>
-            <button onClick={() => setIsSidebarOpen(true)} style={{ color: 'var(--text-primary)', padding: '0.5rem' }}>
-              <Menu size={24} />
-            </button>
+          {/* Sidebar */}
+          <div className={`sidebar-container no-print ${isSidebarOpen ? 'open' : ''}`}>
+            <Sidebar
+              currentView={currentView}
+              setCurrentView={navigate}
+              handleLogout={handleLogout}
+              user={user}
+              dueCount={dueCount}
+              theme={theme}
+              toggleTheme={toggleTheme}
+            />
           </div>
 
-          <Toaster position="top-right" toastOptions={{
-            style: {
-              background: 'var(--bg-glass)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)'
-            }
-          }} />
+          <div className="main-container-wrapper">
 
-          <main className="main-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '3rem 4rem 4rem 4rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-            {currentView === 'generator' && (
-              <>
-                <div className="no-print">
-                  <FileUpload onTextExtracted={setFileContent} user={user} />
-                </div>
-                {fileContent && (
-                  <div className="fade-in">
-                    <div className="no-print">
-                      <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-                    </div>
-                    <div className="glass-panel" style={{ padding: '2rem', minHeight: '400px' }}>
-                      {activeTab === 'reviewer' && <ReviewerTab fileContent={fileContent} user={user} />}
-                      {activeTab === 'quiz' && <QuizTab fileContent={fileContent} user={user} />}
-                      {activeTab === 'flashcards' && <FlashcardsTab fileContent={fileContent} user={user} />}
-                    </div>
+            {/* Mobile Header */}
+            <div className="mobile-header no-print">
+              <button className="brand" style={{ margin: 0 }} onClick={() => navigate('desk')}>
+                <span className="brand-mark"><BrandMark size={26} /></span>
+                <span className="brand-name" style={{ fontSize: 21 }}>StudyPal</span>
+              </button>
+              <button className="icon-btn" onClick={() => setIsSidebarOpen(true)} aria-label="Open menu">
+                <Menu size={22} />
+              </button>
+            </div>
+
+            <Toaster position="top-right" toastOptions={toasterOptions} />
+
+            <main className="main-content">
+              {currentView === 'desk' && (
+                <Desk user={user} decks={decks} decksLoading={materialsLoading} setCurrentView={navigate} />
+              )}
+              {currentView === 'review' && (
+                <ReviewSession
+                  materials={materials}
+                  onMaterialUpdated={handleMaterialUpdated}
+                  onExit={() => navigate('desk')}
+                  onGenerate={() => navigate('generator')}
+                />
+              )}
+              {currentView === 'generator' && (
+                <>
+                  <div className="no-print">
+                    <FileUpload onTextExtracted={setFileContent} user={user} />
                   </div>
-                )}
-              </>
-            )}
-            {currentView === 'library' && <LibraryDashboard user={user} />}
-            {currentView === 'planner' && <Planner user={user} />}
-            {currentView === 'assistant' && <AIAssistant user={user} />}
-            {currentView === 'admin' && <AdminPage user={user} />}
-            {currentView === 'account' && <AccountPage user={user} setCurrentView={setCurrentView} />}
-            {currentView === 'payment' && <PaymentPage user={user} setCurrentView={setCurrentView} />}
-          </main>
+                  {fileContent && (
+                    <div className="fade-in">
+                      <div className="no-print">
+                        <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+                      </div>
+                      <div className="glass-panel" style={{ padding: '2rem', minHeight: '400px' }}>
+                        {activeTab === 'reviewer' && <ReviewerTab fileContent={fileContent} user={user} />}
+                        {activeTab === 'quiz' && <QuizTab fileContent={fileContent} user={user} />}
+                        {activeTab === 'flashcards' && <FlashcardsTab fileContent={fileContent} user={user} />}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {currentView === 'library' && <LibraryDashboard user={user} />}
+              {currentView === 'planner' && <Planner user={user} />}
+              {currentView === 'assistant' && <AIAssistant user={user} />}
+              {currentView === 'admin' && <AdminPage user={user} />}
+              {currentView === 'account' && <AccountPage user={user} setCurrentView={navigate} />}
+              {currentView === 'payment' && <PaymentPage user={user} setCurrentView={navigate} />}
+            </main>
+          </div>
         </div>
-      </div>
+        <MiniTimer />
+      </DeskProvider>
     );
   }
 
   // ── NOT AUTHENTICATED: landing pages (showLanding=true) or auth form (showLanding=false) ──
   if (showLanding) {
+    const pageProps = { onEnterApp: enterApp, setCurrentPage, user: null, theme, toggleTheme };
     if (currentPage === 'about') {
-      return <AboutPage onEnterApp={enterApp} setCurrentPage={setCurrentPage} user={null} />;
+      return <AboutPage {...pageProps} />;
     }
     if (currentPage === 'changelog') {
-      return <ChangelogPage onEnterApp={enterApp} setCurrentPage={setCurrentPage} user={null} />;
+      return <ChangelogPage {...pageProps} />;
     }
-    return <LandingPage onEnterApp={enterApp} setCurrentPage={setCurrentPage} user={null} />;
+    return <LandingPage {...pageProps} />;
   }
 
   // ── AUTH FORM ─────────────────────────────────────────────────────────────
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={toasterOptions} />
       <Auth
         initialMode={authMode}
         onLogin={(u) => {

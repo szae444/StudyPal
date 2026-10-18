@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { LogIn, UserPlus, Mail, Lock, Loader2, ArrowLeft, BookOpen } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import BrandMark from './BrandMark';
 import { signInWithGoogle, signInWithEmail, signUpWithEmail } from '../services/firebaseService';
 import { toast } from 'react-hot-toast';
 
@@ -160,29 +161,18 @@ export default function Auth({ onLogin, onBack, initialMode = 'login' }) {
             }}>
                 
                 {/* Branding Icon */}
-                <div style={{
-                    background: 'var(--text-primary)',
-                    color: 'var(--bg-primary)',
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 1.25rem auto',
-                    boxShadow: 'var(--shadow-sm)'
-                }}>
-                    <BookOpen size={28} strokeWidth={2.2} />
+                <div style={{ display: 'flex', justifyContent: 'center', margin: '0 auto 1.25rem auto' }}>
+                    <BrandMark size={52} />
                 </div>
 
-                <h2 style={{ 
-                    marginBottom: '0.35rem', 
-                    fontSize: '1.75rem', 
+                <h2 style={{
+                    marginBottom: '0.35rem',
+                    fontSize: '2.25rem',
                     textAlign: 'center',
-                    fontWeight: 700,
+                    fontWeight: 500,
                     letterSpacing: '-0.02em',
                     color: 'var(--text-primary)',
-                    fontFamily: "'Plus Jakarta Sans', sans-serif"
+                    fontFamily: 'var(--font-display)'
                 }}>
                     {isLogin ? 'Welcome back' : 'Create an account'}
                 </h2>

@@ -2,9 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>studypal</title>
+    <meta name="theme-color" content="#F4F0E6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17161A" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="StudyPal turns your notes into reviewers, quizzes and flashcards, then keeps your study day on one desk: focus timer, spaced review, planner and streaks." />
+    <title>StudyPal</title>
+    <script>
+      // Apply the saved theme before first paint so the page never flashes the wrong desk.
+      try {
+        var t = localStorage.getItem('studypal.theme');
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

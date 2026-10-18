@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc, serverTimestamp, orderBy, limit, getDoc, setDoc, onSnapshot, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc, serverTimestamp, orderBy, limit, getDoc, setDoc, onSnapshot, Timestamp, increment } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Your web app's Firebase configuration
@@ -329,6 +329,42 @@ export const deleteAIChat = async (chatId) => {
         console.error("Error deleting AI chat: ", error);
         throw error;
     }
+};
+
+// Study Desk functions (focus log, countdowns, goals)
+// Stored on the user's own profile doc under `desk`, so no new collection or rules are needed.
+
+/**
+ * Fetch the user's desk data: { log, countdowns, subjects, dailyGoal }.
+ */
+export const getDesk = async (userId) => {
+    if (!db) return null;
+    try {
+        const snap = await getDoc(doc(db, 'userProfiles', userId));
+        return snap.exists() ? (snap.data().desk || null) : null;
+    } catch (error) {
+        console.error("Error fetching desk: ", error);
+        return null;
+    }
+};
+
+/**
+ * Add one finished focus session to the day's log.
+ * @param {string} day - 'YYYY-MM-DD' in the user's local time
+ */
+export const logFocusSession = async (userId, day, minutes, subject) => {
+    if (!db) return;
+    const entry = { minutes: increment(minutes), sessions: increment(1) };
+    if (subject) entry.bySubject = { [subject]: increment(minutes) };
+    await setDoc(doc(db, 'userProfiles', userId), { desk: { log: { [day]: entry } } }, { merge: true });
+};
+
+/**
+ * Save desk settings (countdowns, subjects, dailyGoal). Arrays are replaced whole.
+ */
+export const saveDeskSettings = async (userId, data) => {
+    if (!db) return;
+    await setDoc(doc(db, 'userProfiles', userId), { desk: data }, { merge: true });
 };
 
 // Export instances to use manually if needed

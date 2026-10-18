@@ -1,19 +1,19 @@
-import React from 'react';
-import { BookOpen, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import LandingNav from './LandingNav';
+import SiteFooter from './SiteFooter';
 
-export default function ChangelogPage({ onEnterApp, setCurrentPage, user }) {
+export default function ChangelogPage({ onEnterApp, setCurrentPage, user, theme, toggleTheme }) {
     return (
         <div className="landing-page changelog-page-root">
             {/* ── FLOATING NAV ── */}
-            <LandingNav onEnterApp={onEnterApp} activePage="changelog" setCurrentPage={setCurrentPage} user={user} />
+            <LandingNav onEnterApp={onEnterApp} activePage="changelog" setCurrentPage={setCurrentPage} user={user} theme={theme} toggleTheme={toggleTheme} />
 
             {/* ── HERO / HEADER ── */}
             <div className="about-hero" style={{ paddingBottom: '4rem' }}>
                 <div className="about-container">
                     <div className="about-section-split">
                         <div className="about-split-side">
-                            <span className="landing-section-label">— CHANGELOG</span>
+                            <span className="landing-section-label">Changelog</span>
                         </div>
                         <div className="about-split-main">
                             <h1 className="about-serif-title">
@@ -32,7 +32,34 @@ export default function ChangelogPage({ onEnterApp, setCurrentPage, user }) {
             <section className="about-section bordered-top" style={{ background: 'var(--bg-primary)' }}>
                 <div className="about-container">
                     <div className="changelog-items">
-                        
+
+                        <div className="changelog-item">
+                            <div className="changelog-left">
+                                <h3 className="changelog-version">v3.0.0</h3>
+                                <p className="changelog-date">October 18, 2026</p>
+                            </div>
+                            <div className="changelog-content">
+                                <div className="changelog-group">
+                                    <span className="changelog-tag new">New</span>
+                                    <ul className="changelog-list">
+                                        <li><span><b>My desk.</b> A new home screen laid out like a bento: timer, today's plan, cards due, streak, study history, countdowns and focus sounds in one view.</span></li>
+                                        <li><span><b>Focus timer.</b> Classic blocks with short and long breaks, or Flow mode that counts up and earns your break. Tag sessions by subject.</span></li>
+                                        <li><span><b>Mini timer.</b> Float the timer over your notes or lecture video (Chrome and Edge on desktop).</span></li>
+                                        <li><span><b>Spaced review.</b> Saved flashcards are now scheduled with FSRS. Rate cards Again, Hard, Good or Easy and they come back right on time.</span></li>
+                                        <li><span><b>Study history.</b> A heatmap of your focus time, a daily goal and a streak.</span></li>
+                                        <li><span><b>Exam countdowns</b> and <b>focus sounds</b> (rain, brown noise, desk fan).</span></li>
+                                    </ul>
+                                </div>
+                                <div className="changelog-group">
+                                    <span className="changelog-tag improved">Improved</span>
+                                    <ul className="changelog-list">
+                                        <li><span>A new look: cream paper, black ink, a highlighter and a red pen. Includes a night desk dark mode.</span></li>
+                                        <li><span>The timer keeps running while you move around the app, and shows in the sidebar and the browser tab.</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Major Feature Release */}
                         <div className="changelog-item">
                             <div className="changelog-left">
@@ -89,30 +116,16 @@ export default function ChangelogPage({ onEnterApp, setCurrentPage, user }) {
             </section>
 
             {/* ── FINAL CTA ── */}
-            <section className="landing-final-cta bordered-top">
+            <section className="landing-final-cta">
                 <div className="final-cta-inner">
-                    <h2 className="about-serif-title" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)' }}>
-                        Ready to start?
-                    </h2>
-                    <div className="landing-hero-ctas">
-                        <button className="landing-cta-primary large" onClick={onEnterApp}>
-                            {user ? 'Go to Dashboard' : 'Open StudyPal'} <ArrowRight size={18} />
-                        </button>
-                    </div>
+                    <h2 className="final-cta-title">Ready to <em>sit down?</em></h2>
+                    <button className="landing-cta-primary large" onClick={() => onEnterApp(user ? 'login' : 'signup')}>
+                        {user ? 'Go to my desk' : 'Open StudyPal'} <ArrowRight size={18} />
+                    </button>
                 </div>
             </section>
 
-            {/* ── FOOTER ── */}
-            <footer className="landing-footer">
-                <div className="footer-inner">
-                    <p className="footer-copy">© 2026 StudyPal. Built for Students Everywhere.</p>
-                    <div className="footer-links">
-                        <button className="footer-link" onClick={() => window.location.href = '/' }>Home</button>
-                        <button className="footer-link" onClick={() => window.open('https://github.com', '_blank')}>Github</button>
-                        <button className="footer-link" onClick={() => window.open('https://twitter.com', '_blank')}>Twitter</button>
-                    </div>
-                </div>
-            </footer>
+            <SiteFooter onEnterApp={onEnterApp} user={user} />
         </div>
     );
 }

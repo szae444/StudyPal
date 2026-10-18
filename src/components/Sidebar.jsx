@@ -1,131 +1,82 @@
-import { Home, Bookmark, LogOut, Moon, Sun, BookOpen, ListTodo, Sparkles, Heart, Shield, UserCircle } from 'lucide-react';
+import { LayoutGrid, Sparkles, Bookmark, CalendarDays, MessageCircle, Layers, Shield, UserCircle, LogOut, Moon, Sun } from 'lucide-react';
+import BrandMark from './BrandMark';
+import { useDesk } from '../desk/useDesk';
+import { formatClock, PHASES } from '../desk/deskUtils';
 
 const ADMIN_EMAIL = 'etrazalsebastian@gmail.com';
 
-export default function Sidebar({ currentView, setCurrentView, handleLogout, user }) {
-    const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
+function NavButton({ item, currentView, setCurrentView }) {
+    const Icon = item.icon;
+    const active = currentView === item.id;
+    return (
+        <button
+            className={`nav-item ${active ? 'active' : ''} ${item.className || ''}`}
+            onClick={() => setCurrentView(item.id)}
+            aria-current={active ? 'page' : undefined}
+        >
+            <Icon size={18} strokeWidth={active ? 2.25 : 1.9} />
+            {item.label}
+            {item.count > 0 && <span className="nav-count" aria-label={`${item.count} due`}>{item.count > 99 ? '99+' : item.count}</span>}
+        </button>
+    );
+}
 
-    const navItems = [
-        { id: 'generator', label: 'Dashboard', icon: Home },
+export default function Sidebar({ currentView, setCurrentView, handleLogout, user, dueCount, theme, toggleTheme }) {
+    const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
+    const { timer, display } = useDesk();
+    const running = timer.status === 'running';
+
+    const study = [
+        { id: 'desk', label: 'My desk', icon: LayoutGrid },
+        { id: 'generator', label: 'Generate', icon: Sparkles },
+        { id: 'review', label: 'Review cards', icon: Layers, count: dueCount },
         { id: 'library', label: 'Library', icon: Bookmark },
-        { id: 'planner', label: 'Planner', icon: ListTodo },
-        { id: 'assistant', label: 'AI Assistant', icon: Sparkles },
-        ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: Shield, adminOnly: true }] : [])
+        { id: 'planner', label: 'Planner', icon: CalendarDays },
+        { id: 'assistant', label: 'Ask StudyPal', icon: MessageCircle },
     ];
 
+    const nav = { currentView, setCurrentView };
+
     return (
-        <div style={{
-            width: '100%',
-            height: '100%',
-            background: 'var(--bg-glass)',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '2rem 1.5rem',
-            overflow: 'hidden', // Enforce no scrolling
-            userSelect: 'none'  // Prevent text selection for a cleaner feel
-        }}>
-            {/* Brand Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem', padding: '0 0.5rem' }}>
-                <div style={{
-                    background: 'var(--text-primary)',
-                    padding: '0.6rem',
-                    borderRadius: '10px',
-                    color: 'var(--bg-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: 'var(--shadow-sm)'
-                }}>
-                    <BookOpen size={20} strokeWidth={2.5} />
-                </div>
-                <h1 style={{ fontSize: '1.5rem', margin: 0, letterSpacing: '-0.03em', fontWeight: 800, color: 'var(--text-primary)' }}>StudyPal</h1>
-            </div>
+        <div className="sidebar">
+            <button className="brand" onClick={() => setCurrentView('desk')} aria-label="StudyPal, go to my desk">
+                <span className="brand-mark"><BrandMark size={30} /></span>
+                <span className="brand-name">StudyPal</span>
+            </button>
 
-            {/* Main Navigation */}
-            <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = currentView === item.id;
-
-                    return (
-                        <button
-                            key={item.id}
-                            onClick={() => setCurrentView(item.id)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1rem',
-                                padding: '0.8rem 1rem',
-                                borderRadius: '12px',
-                                width: '100%',
-                                textAlign: 'left',
-                                background: isActive ? (item.adminOnly ? 'var(--accent-premium)' : 'var(--bg-secondary)') : 'transparent',
-                                color: isActive ? (item.adminOnly ? '#fff' : 'var(--text-primary)') : (item.adminOnly ? 'var(--accent-premium-hover)' : 'var(--text-secondary)'),
-                                fontWeight: isActive ? 600 : 500,
-                                transition: 'all 0.2s ease',
-                                fontFamily: 'Plus Jakarta Sans',
-                                border: item.adminOnly ? `1px solid ${isActive ? 'transparent' : 'var(--accent-premium-soft)'}` : 'none',
-                                cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!isActive) { e.currentTarget.style.color = item.adminOnly ? 'var(--accent-premium-hover)' : 'var(--text-primary)'; }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isActive) { e.currentTarget.style.color = item.adminOnly ? 'var(--accent-premium-hover)' : 'var(--text-secondary)'; }
-                            }}
-                        >
-                            <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                            {item.label}
-                            {item.adminOnly && (
-                                <span className="badge badge-premium" style={{ marginLeft: 'auto' }}>Admin</span>
-                            )}
-                        </button>
-                    )
-                })}
+            <nav aria-label="Main" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {study.map((item) => <NavButton key={item.id} item={item} {...nav} />)}
+                {isAdmin && (
+                    <>
+                        <div className="nav-group-label">Admin</div>
+                        <NavButton item={{ id: 'admin', label: 'Admin', icon: Shield, className: 'admin' }} {...nav} />
+                    </>
+                )}
             </nav>
 
-            {/* Footer Area (Theme & User) */}
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-                <button
-                    onClick={() => setCurrentView('account')}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '1rem',
-                        padding: '0.8rem 1rem', borderRadius: '12px', width: '100%',
-                        textAlign: 'left', background: currentView === 'account' ? 'var(--bg-secondary)' : 'transparent',
-                        color: currentView === 'account' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        fontWeight: currentView === 'account' ? 700 : 500, fontFamily: 'Plus Jakarta Sans', cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                        if (currentView !== 'account') e.currentTarget.style.color = 'var(--text-primary)';
-                    }}
-                    onMouseLeave={(e) => {
-                        if (currentView !== 'account') e.currentTarget.style.color = 'var(--text-secondary)';
-                    }}
-                >
-                    <UserCircle size={20} />
-                    Account
+            {/* The timer follows you around the app */}
+            {(timer.status !== 'idle') && (
+                <button className={`sidebar-timer ${running ? 'running' : ''}`} onClick={() => setCurrentView('desk')}>
+                    <span className="st-dot" />
+                    <span>
+                        <span className="st-time">{formatClock(display.ms)}</span>
+                        <span className="st-label" style={{ display: 'block' }}>
+                            {PHASES[timer.phase].label}{running ? '' : ', paused'}
+                        </span>
+                    </span>
                 </button>
+            )}
 
-
-
-                <button
-                    onClick={handleLogout}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '1rem',
-                        padding: '0.8rem 1rem', borderRadius: '12px', width: '100%',
-                        textAlign: 'left', background: 'transparent', color: 'var(--error)',
-                        fontWeight: 500, fontFamily: 'Plus Jakarta Sans', cursor: 'pointer',
-                        transition: 'background 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                    <LogOut size={20} />
-                    Log Out
+            <div className="sidebar-footer">
+                <button className="nav-item" onClick={toggleTheme}>
+                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                    {theme === 'dark' ? 'Day desk' : 'Night desk'}
                 </button>
-
+                <NavButton item={{ id: 'account', label: 'Account', icon: UserCircle }} {...nav} />
+                <button className="nav-item danger" onClick={handleLogout}>
+                    <LogOut size={18} />
+                    Log out
+                </button>
             </div>
         </div>
     );
