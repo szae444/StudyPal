@@ -17,6 +17,7 @@
     "mammoth": "^1.11.0",
     "motion": "^12.34.5",
     "ogl": "^1.0.11",
+    "pdfjs-dist": "^6.4.299",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",

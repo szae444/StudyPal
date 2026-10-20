@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+import React, { useState, useRef } from 'react';
+import { toast } from 'react-hot-toast';
+import ReviewerDocument, { ColumnToggle } from './ReviewerDocument';
+import { printReviewer } from '../utils/printReviewer';
+import { reviewerTitle } from '../utils/reviewerMarkdown';
 import { ArrowLeft, Download, CheckCircle, XCircle, Repeat, Check } from 'lucide-react';
 
 export default function LibraryViewer({ material, onBack }) {
@@ -34,200 +33,12 @@ export default function LibraryViewer({ material, onBack }) {
 // --- Reviewer Viewer ---
 function ReviewerViewer({ material, onBack }) {
     const [columnCount, setColumnCount] = useState(2);
+    const documentRef = useRef(null);
 
     const handleDownloadPDF = () => {
-        const printWindow = window.open('', '_blank', 'width=1000,height=800');
-        const headerColor = '#1A1A1A'; // Default or theme color
-
-        // Get the HTML content of the reviewer div
-        const reviewerEl = document.querySelector('.reviewer-layout');
-        const content = reviewerEl ? reviewerEl.innerHTML : '';
-
-        printWindow.document.write(`
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StudyPal Reviewer - ${material.title || 'Reviewer'}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: white;
-      color: #1a1a1a;
-      padding: 1.8cm;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-
-    /* Academic Tables print styling */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1.2rem 0;
-      font-size: 0.8rem;
-      break-inside: avoid;
-      page-break-inside: avoid;
-      display: table !important;
-    }
-    th, td {
-      border: 1px solid #d1d5db;
-      padding: 6px 10px;
-      text-align: left;
-    }
-    th {
-      background-color: #f3f4f6;
-      font-weight: 600;
-    }
-    tr:nth-child(even) {
-      background-color: #f9fafb;
-    }
-
-    /* Math formula displays */
-    .katex-display {
-      margin: 1rem 0;
-      break-inside: avoid;
-      page-break-inside: avoid;
-      overflow-x: auto;
-      overflow-y: hidden;
-    }
-    .katex {
-      font-size: 1.05em;
-    }
-
-    .reviewer-layout {
-      column-count: ${columnCount} !important;
-      -webkit-column-count: ${columnCount} !important;
-      column-gap: 2.5rem !important;
-      column-rule: ${columnCount === 2 ? '1px solid #e5e5e5' : 'none'} !important;
-      column-fill: auto !important;
-      font-size: 0.9rem;
-      line-height: 1.6;
-      text-align: justify;
-    }
-
-    .reviewer-layout h1 {
-      column-span: all;
-      text-align: center;
-      font-family: 'Instrument Serif', 'Times New Roman', serif;
-      font-style: italic;
-      font-size: 2.6rem;
-      font-weight: 500;
-      border-top: 2px solid ${headerColor};
-      border-bottom: 2px solid ${headerColor};
-      color: ${headerColor};
-      padding: 0.8rem 0;
-      margin-bottom: 1.5rem;
-      page-break-after: avoid;
-      break-after: avoid;
-    }
-
-    .reviewer-layout h4 {
-      column-span: all;
-      text-align: center;
-      text-transform: uppercase;
-      font-family: 'Inter', system-ui, sans-serif;
-      font-size: 0.75rem;
-      letter-spacing: 2px;
-      color: #666;
-      border-bottom: 1px solid #e5e5e5;
-      padding-bottom: 0.8rem;
-      margin-bottom: 2rem;
-      font-weight: 600;
-      page-break-after: avoid;
-      break-after: avoid;
-    }
-
-    .reviewer-layout h2 {
-      background-color: ${headerColor};
-      color: #ffffff;
-      padding: 0.5rem 1rem;
-      font-size: 1.15rem;
-      border-radius: 4px;
-      margin-top: 1.8rem;
-      margin-bottom: 1.5rem;
-      page-break-after: avoid;
-      break-after: avoid;
-      text-align: center;
-      box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.08);
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-      font-weight: 700;
-    }
-
-    .reviewer-layout h3 {
-      background: #f5f5f5;
-      border: 1px solid ${headerColor};
-      color: ${headerColor};
-      padding: 0.4rem 0.8rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      text-align: center;
-      margin-top: 1.4rem;
-      margin-bottom: 0.8rem;
-      page-break-after: avoid;
-      break-after: avoid;
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    }
-
-    .reviewer-layout blockquote {
-      border: 1px dashed ${headerColor};
-      background: #fbfbfb;
-      padding: 0.8rem 1.2rem;
-      margin: 1.2rem 0;
-      border-radius: 4px;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-
-    .reviewer-layout blockquote p { margin-bottom: 0; }
-
-    .reviewer-layout ul, .reviewer-layout ol {
-      padding-left: 1.5rem;
-      margin-bottom: 1.2rem;
-    }
-
-    .reviewer-layout li {
-      margin-bottom: 0.4rem;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-
-    .reviewer-layout p {
-      margin-bottom: 0.8rem;
-    }
-
-    .reviewer-layout strong {
-      background: rgba(245, 158, 11, 0.15) !important; /* Premium highlighter tint */
-      padding: 1px 4px;
-      font-weight: 700;
-      border-radius: 3px;
-      color: #000;
-      border-bottom: none !important;
-    }
-
-    @media print {
-      body { padding: 1.2cm; }
-      .reviewer-layout {
-        column-count: ${columnCount} !important;
-        column-gap: 2rem !important;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="reviewer-layout">
-    ${content}
-  </div>
-  <script>
-    window.onload = function() { window.print(); };
-  </script>
-</body>
-</html>
-        `);
-        printWindow.document.close();
+        if (!printReviewer(documentRef.current, reviewerTitle(material.data, material.title || 'Reviewer'))) {
+            toast.error('Allow pop-ups for StudyPal to download the PDF.');
+        }
     };
 
     return (
@@ -236,43 +47,15 @@ function ReviewerViewer({ material, onBack }) {
                 <button className="btn-secondary" onClick={onBack}>
                     <ArrowLeft size={18} /> Back to Library
                 </button>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                        {[1, 2].map(n => (
-                            <button
-                                key={n}
-                                onClick={() => setColumnCount(n)}
-                                style={{
-                                    padding: '0.3rem 0.75rem',
-                                    borderRadius: '6px',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 600,
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    background: columnCount === n ? 'var(--accent-primary)' : 'transparent',
-                                    color: columnCount === n ? 'var(--bg-primary)' : 'var(--text-muted)',
-                                    transition: 'all 0.2s ease'
-                                }}
-                            >
-                                {n} Col
-                            </button>
-                        ))}
-                    </div>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <ColumnToggle columns={columnCount} setColumns={setColumnCount} />
                     <button onClick={handleDownloadPDF} className="btn-primary">
                         <Download size={18} /> Download
                     </button>
                 </div>
             </div>
 
-            <div className={`reviewer-layout ${columnCount === 2 ? 'two-columns' : ''}`} style={{ 
-                columnCount: columnCount, 
-                columnRule: columnCount === 2 ? '1px solid var(--border-color)' : 'none',
-                columnGap: '2rem'
-            }}>
-                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                    {material.data || ''}
-                </ReactMarkdown>
-            </div>
+            <ReviewerDocument ref={documentRef} markdown={material.data || ''} columns={columnCount} />
         </div>
     );
 }

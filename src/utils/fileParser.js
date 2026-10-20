@@ -1,66 +1,58 @@
 /**
  * StudyPal Client-side File Parsing Utilities
- * Provides dynamic loading for PDF.js and Tesseract.js to securely parse PDFs and OCR images.
+ * PDF.js is loaded on demand, so it only downloads when someone opens a PDF.
  */
+
+// The legacy build supports older phones (no Promise.withResolvers on iOS < 17.4).
+const loadPdfJs = async () => {
+    const [pdfjs, worker] = await Promise.all([
+        import('pdfjs-dist/legacy/build/pdf.min.mjs'),
+        import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),
+    ]);
+    pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    return pdfjs;
+};
+
+// Pages with less text than this on average have no real text layer (scanned or photographed).
+const SCANNED_CHARS_PER_PAGE = 60;
 
 /**
- * Dynamically loads and extracts text from a PDF file using PDF.js
+ * Read a PDF's text, keeping its line breaks so headings, bullets and tables stay recognisable.
+ * Returns { text, pages, scanned }.
  */
-export const extractTextFromPDF = async (arrayBuffer) => {
-    if (!window.pdfjsLib) {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-
-    // Configure worker source location
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-
+export const readPDF = async (arrayBuffer) => {
+    const pdfjs = await loadPdfJs();
     try {
-        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer), verbosity: 0 }).promise;
         let fullText = '';
+        let contentChars = 0;
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             const page = await pdf.getPage(pageNum);
             const textContent = await page.getTextContent();
-            const pageText = textContent.items.map(item => item.str).join(' ');
+            let pageText = '';
+            for (const item of textContent.items) {
+                pageText += item.str;
+                if (item.hasEOL) pageText += '\n';
+            }
+            pageText = pageText.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+            contentChars += pageText.replace(/\s/g, '').length;
             fullText += `\n--- Page ${pageNum} ---\n${pageText}`;
+            page.cleanup();
         }
 
-        return fullText.trim();
+        return {
+            text: fullText.trim(),
+            pages: pdf.numPages,
+            scanned: contentChars / Math.max(pdf.numPages, 1) < SCANNED_CHARS_PER_PAGE,
+        };
     } catch (error) {
         console.error("PDF.js extraction failed:", error);
-        throw new Error("Failed to parse PDF content. Please check if the document contains scanned pages or copy protection.");
+        throw new Error("Failed to read this PDF. It may be password-protected or damaged.");
     }
 };
 
 /**
- * Dynamically loads and performs OCR on an image file using Tesseract.js
+ * Extract a PDF's text (used by the AI assistant).
  */
-export const extractTextFromImage = async (file) => {
-    if (!window.Tesseract) {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-
-    try {
-        const worker = await window.Tesseract.createWorker();
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
-        const { data: { text } } = await worker.recognize(file);
-        await worker.terminate();
-        return text.trim();
-    } catch (error) {
-        console.error("Tesseract.js OCR failed:", error);
-        throw new Error("Failed to perform OCR text extraction on this image.");
-    }
-};
+export const extractTextFromPDF = async (arrayBuffer) => (await readPDF(arrayBuffer)).text;

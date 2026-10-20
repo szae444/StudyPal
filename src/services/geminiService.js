@@ -5,12 +5,12 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from './firebaseService';
 
-// Long quizzes run several Gemini calls in a row, so allow up to the function's own 5 minute timeout.
+// Long quizzes and reviewers run several Gemini calls, so wait as long as the function's own 9 minute timeout.
 const callAI = async (task, params) => {
     if (!functions) {
         throw new Error("Firebase is not configured. Please add your credentials to .env.local");
     }
-    const ai = httpsCallable(functions, 'ai', { timeout: 300_000 });
+    const ai = httpsCallable(functions, 'ai', { timeout: 540_000 });
     try {
         const { data } = await ai({ task, ...params });
         return data.result;

@@ -1,9 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, File, CheckCircle, X, Plus, Lock, Clock } from 'lucide-react';
 import * as mammoth from 'mammoth';
-import { extractTextFromPDF } from '../utils/fileParser';
+import { readPDF } from '../utils/fileParser';
 import { getUserProfile, checkAndIncrementUploads } from '../services/firebaseService';
 import toast from 'react-hot-toast';
+
+// Scanned PDFs go to Gemini as the file itself. Base64 adds a third, and Gemini caps inline
+// requests at 20 MB, so 14 MB is the largest scanned PDF that fits.
+const MAX_SCANNED_PDF_BYTES = 14 * 1024 * 1024;
+
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+});
 
 export default function FileUpload({ onTextExtracted, user }) {
     const [isDragging, setIsDragging] = useState(false);
@@ -79,21 +90,21 @@ export default function FileUpload({ onTextExtracted, user }) {
             onTextExtracted(files[0].payload);
             return;
         }
-        // Multiple files: combine all text payloads into a single text block
-        const combined = files.map(f =>
-            f.payload.type === 'text'
-                ? `\n\n=== ${f.name} ===\n${f.payload.data}`
-                : null
-        ).filter(Boolean).join('');
-
-        // If we have a single binary (image/pdf) alongside text, just pass the first binary
-        // Otherwise concatenate all text
+        // Multiple text files: combine them into one text block, each under its file name
         const hasBinary = files.some(f => f.payload.type === 'inline');
-        if (hasBinary && files.length === 1) {
-            onTextExtracted(files[0].payload);
-        } else {
+        if (!hasBinary) {
+            const combined = files.map(f => `\n\n=== ${f.name} ===\n${f.payload.data}`).join('');
             onTextExtracted({ type: 'text', mimeType: 'text/plain', data: combined });
+            return;
         }
+
+        // Images or scanned PDFs mixed in: send every file, so none is silently dropped
+        onTextExtracted({
+            type: 'parts',
+            items: files.map(f => f.payload.type === 'text'
+                ? { type: 'text', mimeType: 'text/plain', data: `=== ${f.name} ===\n${f.payload.data}` }
+                : f.payload),
+        });
     };
 
     const extractPayload = (file) => new Promise((resolve, reject) => {
@@ -122,8 +133,19 @@ export default function FileUpload({ onTextExtracted, user }) {
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
-                    const text = await extractTextFromPDF(e.target.result);
-                    resolve({ type: 'text', mimeType: 'text/plain', data: text });
+                    const { text, scanned } = await readPDF(e.target.result);
+                    if (!scanned) {
+                        resolve({ type: 'text', mimeType: 'text/plain', data: text });
+                        return;
+                    }
+                    // Scanned or photographed pages have no text to extract, so Gemini reads the
+                    // PDF itself. The request size caps how big that file can be.
+                    if (file.size > MAX_SCANNED_PDF_BYTES) {
+                        reject(new Error(`this PDF is scanned (no selectable text) and larger than ${MAX_SCANNED_PDF_BYTES / (1024 * 1024)} MB. Split it into smaller files and upload them together.`));
+                        return;
+                    }
+                    const base64 = await fileToBase64(file);
+                    resolve({ type: 'inline', mimeType: 'application/pdf', data: base64 });
                 } catch (err) {
                     reject(err);
                 }
