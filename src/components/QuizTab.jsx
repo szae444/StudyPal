@@ -47,7 +47,7 @@ export default function QuizTab({ fileContent, user }) {
         setIsConfiguring(false);
 
         try {
-            const result = await generateQuiz(fileContent, config.difficulty, num, config.questionType, user?.uid, user?.email);
+            const result = await generateQuiz(fileContent, config.difficulty, num, config.questionType);
             setQuizData(result);
             setUserAnswers({});
             setSubmitted(false);
@@ -55,7 +55,7 @@ export default function QuizTab({ fileContent, user }) {
             setOneByOneAnswered(false);
         } catch (err) {
             console.error(err);
-            setError('Failed to generate quiz. Please check your internet connection or try a different difficulty/length.');
+            setError(err.message || 'Failed to generate quiz. Please check your internet connection or try a different difficulty/length.');
             // Do NOT set isConfiguring to true here, otherwise the error block below is skipped!
         }
         setLoading(false);

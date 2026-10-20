@@ -22,11 +22,11 @@ export default function ReviewerTab({ fileContent, user }) {
         setLoading(true);
         setError('');
         try {
-            const result = await generateReviewer(fileContent, isHighlighting, user?.uid, user?.email);
+            const result = await generateReviewer(fileContent, isHighlighting);
             setReviewerContent(result);
         } catch (err) {
             console.error(err);
-            setError('Failed to generate reviewer. Please ensure your Gemini API key is configured correctly in .env.local.');
+            setError(err.message || 'Failed to generate reviewer. Please try again.');
         }
         setLoading(false);
     };

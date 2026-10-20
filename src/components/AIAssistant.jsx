@@ -122,7 +122,7 @@ export default function AIAssistant({ user }) {
                 role: m.role,
                 parts: [{ text: m.text }]
             }));
-            const session = createChatSession(formattedHistory, user?.uid, user?.email);
+            const session = createChatSession(formattedHistory);
             setChatSession(session);
         } catch (error) {
             console.error("Failed to initialize chat:", error);
@@ -341,7 +341,7 @@ export default function AIAssistant({ user }) {
 
         } catch (error) {
             console.error("Failed to get AI response:", error);
-            toast.error("Sorry, I encountered an error answering that.");
+            toast.error(error.message || "Sorry, I encountered an error answering that.");
             setMessages(prev => [...prev, {
                 role: 'model',
                 text: "I'm sorry, I encountered an error while processing your request. Please try again.",

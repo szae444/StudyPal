@@ -44,12 +44,12 @@ export default function FlashcardsTab({ fileContent, user }) {
 
         try {
             const num = Math.min(parseInt(config.numCards) || 10, 40);
-            const result = await generateFlashcards(fileContent, num, user?.uid, user?.email);
+            const result = await generateFlashcards(fileContent, num);
             setFlashcards(result);
             resetDeckState();
         } catch (err) {
             console.error(err);
-            setError('Failed to generate flashcards. Please check your internet connection or try generating fewer cards.');
+            setError(err.message || 'Failed to generate flashcards. Please check your internet connection or try generating fewer cards.');
             // Do NOT set isConfiguring to true here so the error message shows!
         }
         setLoading(false);

@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc, serverTimestamp, orderBy, limit, getDoc, setDoc, onSnapshot, Timestamp, increment } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 
 // Your web app's Firebase configuration
 // These need to be filled in by the user in .env.local
@@ -16,7 +17,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only if config exists to prevent app crash if user hasn't set it up yet
-let app, auth, db, googleProvider, storage;
+let app, auth, db, googleProvider, storage, functions;
 
 try {
     if (firebaseConfig.apiKey) {
@@ -24,6 +25,8 @@ try {
         auth = getAuth(app);
         db = getFirestore(app);
         storage = getStorage(app);
+        // Must match the region in functions/index.js
+        functions = getFunctions(app, 'asia-southeast1');
         googleProvider = new GoogleAuthProvider();
     }
 } catch (error) {
@@ -368,7 +371,7 @@ export const saveDeskSettings = async (userId, data) => {
 };
 
 // Export instances to use manually if needed
-export { app, auth, db, storage };
+export { app, auth, db, storage, functions };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Subscriptions & Payments
@@ -602,41 +605,7 @@ export const resolvePayment = async (paymentId, userId, newStatus, planRequested
     }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AI Usage Logging
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Log a single AI model call to Firestore for admin monitoring.
- * Called automatically by geminiService after every successful generation.
- */
-export const logAIUsage = async (userId, userEmail, feature, model, itemCount) => {
-    if (!db) return;
-    try {
-        await addDoc(collection(db, 'aiUsageLogs'), {
-            userId: userId || 'anonymous',
-            userEmail: userEmail || 'unknown',
-            feature,      // 'quiz' | 'flashcards' | 'reviewer' | 'chat'
-            model,
-            itemCount: itemCount || 0,
-            timestamp: serverTimestamp()
-        });
-        // Also maintain a running per-user stats document
-        const statsRef = doc(db, 'userStats', userId || 'anonymous');
-        const statsSnap = await getDoc(statsRef);
-        const existing = statsSnap.exists() ? statsSnap.data() : {};
-        await setDoc(statsRef, {
-            userId: userId || 'anonymous',
-            email: userEmail || 'unknown',
-            totalCalls: (existing.totalCalls || 0) + 1,
-            [`${feature}Calls`]: ((existing[`${feature}Calls`]) || 0) + 1,
-            lastActiveAt: serverTimestamp()
-        }, { merge: true });
-    } catch (e) {
-        // Logging failure must never break the main feature
-        console.warn('AI usage log failed (non-critical):', e.message);
-    }
-};
+// AI usage logs (aiUsageLogs, userStats) are written by the `ai` Cloud Function.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Admin-only read functions
